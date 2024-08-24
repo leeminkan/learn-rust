@@ -14,18 +14,18 @@ use view::View;
 mod status_bar;
 use status_bar::StatusBar;
 
-#[derive(Default, Eq, PartialEq, Debug)]
-pub struct DocumentStatus {
-    total_lines: usize,
-    current_line_index: usize,
-    is_modified: bool,
-    file_name: Option<String>,
-}
+mod document_status;
+use document_status::DocumentStatus;
+mod file_info;
+
+pub const NAME: &str = env!("CARGO_PKG_NAME");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Editor {
     should_quit: bool,
     view: View,
     status_bar: StatusBar,
+    title: String,
 }
 
 impl Editor {
@@ -36,16 +36,28 @@ impl Editor {
             current_hook(panic_info);
         }));
         Terminal::initialize()?;
-        let mut view = View::new(2);
+        let mut editor = Self {
+            should_quit: false,
+            view: View::new(2),
+            status_bar: StatusBar::new(1),
+            title: String::new(),
+        };
         let args: Vec<String> = env::args().collect();
         if let Some(file_name) = args.get(1) {
-            view.load(file_name);
+            editor.view.load(file_name);
         }
-        Ok(Self {
-            should_quit: false,
-            view,
-            status_bar: StatusBar::new(1),
-        })
+        editor.refresh_status();
+
+        Ok(editor)
+    }
+
+    pub fn refresh_status(&mut self) {
+        let status = self.view.get_status();
+        let title = format!("{} - {NAME}", status.file_name);
+        self.status_bar.update_status(status);
+        if title != self.title && matches!(Terminal::set_title(&title), Ok(())) {
+            self.title = title;
+        }
     }
 
     pub fn run(&mut self) {

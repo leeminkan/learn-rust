@@ -2,16 +2,13 @@ use self::line::Line;
 use super::{
     editor_command::{Direction, EditorCommand},
     terminal::{Position, Size, Terminal},
-    DocumentStatus,
+    DocumentStatus, NAME, VERSION,
 };
 use std::cmp::min;
 
 mod buffer;
 use buffer::Buffer;
 mod line;
-
-const NAME: &str = env!("CARGO_PKG_NAME");
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Copy, Clone, Default)]
 pub struct Location {
@@ -23,6 +20,7 @@ pub struct View {
     buffer: Buffer,
     needs_redraw: bool,
     size: Size,
+    margin_bottom: usize,
     text_location: Location,
     scroll_offset: Position,
 }
@@ -37,6 +35,7 @@ impl View {
                 width: terminal_size.width,
                 height: terminal_size.height.saturating_sub(margin_bottom),
             },
+            margin_bottom,
             text_location: Location::default(),
             scroll_offset: Position::default(),
         }
@@ -46,7 +45,7 @@ impl View {
         DocumentStatus {
             total_lines: self.buffer.height(),
             current_line_index: self.text_location.line_index,
-            file_name: self.buffer.file_name.clone(),
+            file_name: format!("{}", self.buffer.file_info),
             is_modified: self.buffer.dirty,
         }
     }
@@ -75,13 +74,16 @@ impl View {
     }
 
     fn resize(&mut self, to: Size) {
-        self.size = to;
+        self.size = Size {
+            width: to.width,
+            height: to.height.saturating_sub(self.margin_bottom),
+        };
         self.scroll_text_location_into_view();
         self.needs_redraw = true;
     }
 
     pub fn render(&mut self) {
-        if !self.needs_redraw {
+        if !self.needs_redraw || self.size.height == 0 {
             return;
         }
 
@@ -149,17 +151,16 @@ impl View {
 
     fn build_welcome_message(width: usize) -> String {
         if width == 0 {
-            return " ".to_string();
+            return String::new();
         }
         let welcome_message = format!("{NAME} editor -- version {VERSION}");
         let len = welcome_message.len();
-        if width <= len {
+        let remaining_width = width.saturating_sub(1);
+        // hide the welcome message if it doesn't fit entirely.
+        if remaining_width < len {
             return "~".to_string();
         }
-        let padding = (width.saturating_sub(len).saturating_sub(1)) / 2;
-        let mut full_message = format!("~{}{}", " ".repeat(padding), welcome_message);
-        full_message.truncate(width);
-        full_message
+        format!("{:<1}{:^remaining_width$}", "~", welcome_message)
     }
 
     fn scroll_vertically(&mut self, to: usize) {
