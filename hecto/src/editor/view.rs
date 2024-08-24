@@ -34,7 +34,8 @@ impl View {
             EditorCommand::Quit => {}
             EditorCommand::Insert(character) => self.insert_char(character),
             EditorCommand::Delete => self.delete(),
-            EditorCommand::Backspace => self.backspace(),
+            EditorCommand::Backspace => self.delete_backward(),
+            EditorCommand::Enter => self.insert_newline(),
         }
     }
     pub fn load(&mut self, file_name: &str) {
@@ -101,13 +102,19 @@ impl View {
         self.needs_redraw = true;
     }
 
-    fn backspace(&mut self) {
+    fn delete_backward(&mut self) {
         self.move_left();
         self.delete();
     }
 
     fn delete(&mut self) {
         self.buffer.delete(self.text_location);
+        self.needs_redraw = true;
+    }
+
+    fn insert_newline(&mut self) {
+        self.buffer.insert_newline(self.text_location);
+        self.move_text_location(&Direction::Right);
         self.needs_redraw = true;
     }
 
