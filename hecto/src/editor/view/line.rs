@@ -29,7 +29,12 @@ pub struct Line {
 
 impl Line {
     pub fn from(line_str: &str) -> Self {
-        let fragments = line_str
+        let fragments = Self::str_to_fragments(line_str);
+        Self { fragments }
+    }
+
+    fn str_to_fragments(line_str: &str) -> Vec<TextFragment> {
+        line_str
             .graphemes(true)
             .map(|grapheme| {
                 let (replacement, rendered_width) = Self::replacement_character(grapheme)
@@ -51,8 +56,24 @@ impl Line {
                     replacement,
                 }
             })
-            .collect();
-        Self { fragments }
+            .collect()
+    }
+
+    pub fn insert_char(&mut self, character: char, grapheme_index: usize) {
+        let mut result = String::new();
+
+        for (index, fragment) in self.fragments.iter().enumerate() {
+            if index == grapheme_index {
+                result.push(character);
+            }
+            result.push_str(&fragment.grapheme);
+        }
+
+        if grapheme_index >= self.fragments.len() {
+            result.push(character);
+        }
+
+        self.fragments = Self::str_to_fragments(&result);
     }
 
     pub fn get_visible_graphemes(&self, range: Range<usize>) -> String {
