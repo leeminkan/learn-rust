@@ -4,7 +4,7 @@ Hello, world! This is a test.
 # Testing tabs
 Here	is	a	tab	separated	line.
 
-# Testing visible and invisible whitespace
+# dTesssssting visible and invisible whitespace
 Non-breaking space and zero-width​space.
 
 # Testing control characters
