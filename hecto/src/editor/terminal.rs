@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use super::{Position, Size};
 use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::style::{Attribute, Print};
 use crossterm::terminal::{
@@ -7,27 +8,6 @@ use crossterm::terminal::{
 };
 use crossterm::{queue, Command};
 use std::io::{stdout, Error, Write};
-
-#[derive(Default, Copy, Clone, Eq, PartialEq)]
-pub struct Size {
-    pub height: usize,
-    pub width: usize,
-}
-
-#[derive(Copy, Clone, Default)]
-pub struct Position {
-    pub col: usize,
-    pub row: usize,
-}
-
-impl Position {
-    pub const fn saturating_sub(self, other: Self) -> Self {
-        Self {
-            row: self.row.saturating_sub(other.row),
-            col: self.col.saturating_sub(other.col),
-        }
-    }
-}
 /// Represents the Terminal.
 /// Edge Case for platforms where `usize` < `u16`:
 /// Regardless of the actual size of the Terminal, this representation

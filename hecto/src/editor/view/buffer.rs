@@ -2,10 +2,7 @@ use std::fs::{read_to_string, File};
 use std::io::Error;
 use std::io::Write;
 
-use super::line::Line;
-use super::Location;
-
-use crate::editor::file_info::FileInfo;
+use super::{FileInfo, Line, Location};
 
 #[derive(Default)]
 pub struct Buffer {
@@ -32,19 +29,36 @@ impl Buffer {
         self.lines.is_empty()
     }
 
+    pub const fn is_file_loaded(&self) -> bool {
+        self.file_info.has_path()
+    }
+
     pub fn height(&self) -> usize {
         self.lines.len()
     }
 
-    pub fn save(&mut self) -> Result<(), Error> {
-        if let Some(path) = &self.file_info.path {
-            let mut file = File::create(path)?;
+    fn save_to_file(&self, file_info: &FileInfo) -> Result<(), Error> {
+        if let Some(file_path) = &file_info.get_path() {
+            let mut file = File::create(file_path)?;
             for line in &self.lines {
                 writeln!(file, "{line}")?;
             }
-            self.dirty = false;
         }
 
+        Ok(())
+    }
+
+    pub fn save_as(&mut self, file_name: &str) -> Result<(), Error> {
+        let file_info = FileInfo::from(file_name);
+        self.save_to_file(&file_info)?;
+        self.file_info = file_info;
+        self.dirty = false;
+        Ok(())
+    }
+
+    pub fn save(&mut self) -> Result<(), Error> {
+        self.save_to_file(&self.file_info)?;
+        self.dirty = false;
         Ok(())
     }
 
